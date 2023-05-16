@@ -22,7 +22,7 @@ ALL_GROUPS = ["SkyteamTest"]
 # MAPPINGS: mappings from information we get from db to slack groups
 
 ROLE_TO_GROUP = {}
-ROLE_TO_GROUP["STU"] = ["Students_TEST", "SkyteamTest_TEST1"]
+ROLE_TO_GROUP["STU"] = ["Students_TEST", "SkyteamTest_TEST1", "TestTest"]
 ROLE_TO_GROUP["STUEMP"] = ["Students_TEST", "Employees_TEST"]
 ROLE_TO_GROUP["FAC"] = ["Faculty_TEST"]
 ROLE_TO_GROUP["EMP"] = ["Employees_TEST"]
@@ -38,5 +38,6 @@ YEAR_TO_GROUP["2019"] = ["C01JZQZQZQZ"]
 YEAR_TO_GROUP["2020"] = ["C01JZQZQZQZ"]
 YEAR_TO_GROUP["2021"] = ["C01JZQZQZQZ"]
 YEAR_TO_GROUP["2022"] = ["C01JZQZQZQZ"]
+YEAR_TO_GROUP["2023"] = ["2023Students_TEST"]
 
 

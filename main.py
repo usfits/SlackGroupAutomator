@@ -19,9 +19,7 @@ def main():
         "ROLE_TO_GROUP": Configs.ROLE_TO_GROUP,
     }
     slackHandler.updateGroups(databaseResults=resultList, createNewGroups=Configs.CREATE_NEW_GROUPS, mappings=mappings)
-    # g = set()
-    # g.add("SkyteamTest")
-    # response = slackHandler.createGroups(g)
+
     
 if __name__ == "__main__":
     main()

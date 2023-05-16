@@ -21,10 +21,10 @@ class SlackHandler:
         response = self.client.search_users(
             start_index=1,
             count=1000 ,
-            # filter="userName Eq 'gskalele' "
+            # filter="email Eq 'dhyman2@usfca.edu' "
         )
 
-        # print(response.body)
+        # print(response.body['Resources'])
         for resource in response.body['Resources']:
             userId = resource['id']
             userEmail = resource['emails'][0]['value']
@@ -41,7 +41,9 @@ class SlackHandler:
                 # self.userInformation[userEmail]["groupList"].add(group)
                 self.userInformation[userEmail]["groupSet"].add((group['value'], group['display']))
         
-        # print(self.userInformation)
+        # for email, value in self.userInformation.items():
+        #     print(email + ' ---> ' + str(value))
+        #     print('-------')
         return
 
     def populateGroups(self) -> None:
@@ -72,10 +74,12 @@ class SlackHandler:
         groupSet = set()
         groupsToCreate = set()
 
+        # filling up the set of all groups
         for _, value in roleToGroupMapping.items():
             for val in value:
                 groupSet.add(val)
         
+        # getting a set of groups which do not exist yet in slack
         for groupName in groupSet:
             if groupName not in self.groupInformation.keys():
                 groupsToCreate.add(groupName)
@@ -86,22 +90,29 @@ class SlackHandler:
         # print("printing")
         # print(self.userInformation)
 
+        self.createAccountForNewUsers(databaseResults)
+
         updatedGroupMembers = {}
         for row in databaseResults:
             i = self.userInformation[row["email"]]["slackId"]
             print(f"user email is {row['email']} and information is in next line userId is {i}")
 
-            userRole = row["role"]
-
-            userShouldBeInGroups = set(roleToGroupMapping[userRole])
+            # a user can have multiple roles, we need to split them to get the individual roles
+            userRoleList = [val.strip() for val in row["role"].split("|")]
+            
+            userShouldBeInGroups = []
+            for roles in userRoleList:
+                roleGroup = roleToGroupMapping[roles]
+                userShouldBeInGroups += roleGroup
+            
+            userShouldBeInGroups = set(userShouldBeInGroups)
             print(f"user should be in groups: {userShouldBeInGroups}")
 
             userIsInGroups = set([group[1] for group in self.userInformation[row["email"]]["groupSet"]])
             print(f"user is in groups: {userIsInGroups}")
 
             addUserToGroups = userShouldBeInGroups - userIsInGroups
-            print(f"add user to groups: {addUserToGroups}")
-            print()
+            print(f"add user to groups: {addUserToGroups} \n\n")
             userSlackId = self.userInformation[row["email"]]["slackId"]
 
             for groups in addUserToGroups:
@@ -113,7 +124,7 @@ class SlackHandler:
                 
                 updatedGroupMembers[groupId]["members"].append({'value': userSlackId, 'operation': 'add'})
         
-        # print(updatedGroupMembers)
+        print(updatedGroupMembers)
 
         for groupId, val in updatedGroupMembers.items():
             print(groupId + " ---> " + str(val["members"]) + " --> " + val["name"])
@@ -123,8 +134,42 @@ class SlackHandler:
             print(response.body)
             print("\n\n\n")
 
-        
+        return
+    
+    def createAccountForNewUsers(self, databaseResults: list) -> None:
+        userEmailsSlack = self.userInformation.keys()
+        userEmailsDatabase = set([row["email"] for row in databaseResults])
 
+        newUsers = userEmailsDatabase - userEmailsSlack
+
+        print(f"new users are {newUsers}")
+
+        if len(newUsers) == 0:
+            print("no new users to create")
+            return
+
+        for userEmail in newUsers:
+            userName = userEmail.split("@")[0]
+            user = User(
+                user_name=userName,
+                emails=[UserEmail(value=userEmail)],
+            )
+            response = self.client.create_user(user)
+
+            # print(response)
+
+            if response.status_code != 201:
+                print("error in creating user")
+                return
+            
+            self.userInformation[userEmail] = {
+                "slackId": response.user.id,
+                "userName": userName,
+                "groupSet": set(),
+            }
+
+            print(f"created user {userEmail} and userId is {response.user.id}")
+        
         return
 
     def searchUsers(self, startIndex: int, count: int, filter: str = "") -> list:
